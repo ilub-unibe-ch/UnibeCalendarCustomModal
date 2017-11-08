@@ -1,0 +1,23 @@
+{
+  "name": "studer-raimann/unibe-calendar-custom-modal",
+  "authors": [
+    {
+      "name": "Fabian Schmid",
+      "email": "fs@studer-raimann.ch"
+    }
+  ],
+  "require": {},
+  "autoload": {
+    "psr-4": {
+      "SRAG\\Plugins\\UnibeCalendarCustomGrid\\": "../../AppointmentCustomGrid/UnibeCalendarCustomGrid/src/",
+      "SRAG\\Plugins\\UnibeCalendarCustomModal\\": "src/"
+    },
+    "classmap": [
+      "classes",
+      "../../AppointmentCustomGrid/UnibeCalendarCustomGrid/classes/",
+      "../../../../../../../Services/Calendar",
+      "../../../../../../../Modules/Session",
+      "../../../../../../../Modules/File"
+    ]
+  }
+}

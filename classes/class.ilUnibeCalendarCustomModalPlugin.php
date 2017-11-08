@@ -1,5 +1,6 @@
 <?php
-include_once("./Services/Calendar/classes/class.ilAppointmentCustomModalPlugin.php");
+
+require_once('./Customizing/global/plugins/Services/Calendar/AppointmentCustomModal/UnibeCalendarCustomModal/vendor/autoload.php');
 
 /**
  * Class ilUnibeCalendarCustomModalPlugin
@@ -33,15 +34,6 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 	 * @return string
 	 */
 	public function replaceContent() {
-		global $DIC;
-
-		if ($this->isSession()) {
-			$f = $DIC->ui()->factory();
-			$r = $DIC->ui()->renderer();
-
-			return $r->render($f->dropzone()->file()->standard("#", $f->legacy("TRALLALA")));
-		}
-
 		return "";
 	}
 
@@ -58,7 +50,8 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 
 			return $r->render($f->dropzone()
 			                    ->file()
-			                    ->standard("#")); // The seems ro be a JS problem within the Modal
+			                    ->standard($this->getUploadURL())
+			                    ->withUploadButton($f->button()->standard('Upload', '')));
 		}
 
 		return "";
@@ -81,6 +74,8 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 	 * @return ilToolbarGUI
 	 */
 	public function toolbarAddItems(ilToolbarGUI $a_toolbar) {
+
+
 		return $a_toolbar;
 	}
 
@@ -100,5 +95,26 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 	 */
 	public function editModalTitle($title) {
 		return $title;
+	}
+
+
+	/**
+	 * @return \ilCalendarCategory
+	 */
+	private function getCategory(): \ilCalendarCategory {
+		$appointment = $this->getAppointment();
+
+		$cat_id = ilCalendarCategoryAssignments::_lookupCategory($appointment->getEntryId());
+		$cat = ilCalendarCategory::getInstanceByCategoryId($cat_id);
+
+		return $cat;
+	}
+
+
+	/**
+	 * @return string
+	 */
+	private function getUploadURL(): string {
+		return (new ilUnibeUploadHandlerGUI())->buildUploadURL($this->getCategory()->getObjId());
 	}
 }
