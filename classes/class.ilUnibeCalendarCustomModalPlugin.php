@@ -8,6 +8,10 @@ require_once('./Customizing/global/plugins/Services/Calendar/AppointmentCustomMo
  * @author Fabian Schmid <fs@studer-raimann.ch>
  */
 class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
+	/**
+	 * ilCalendarCategory []
+	 */
+	protected $categories = [];
 
 	/**
 	 * @return string
@@ -44,7 +48,7 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 	public function addExtraContent() {
 		global $DIC;
 
-		if ($this->isSession()) {
+		if ($this->isSession() && $this->checkWriteAccess()) {
 			$f = $DIC->ui()->factory();
 			$r = $DIC->ui()->renderer();
 
@@ -102,12 +106,26 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 	 * @return \ilCalendarCategory
 	 */
 	private function getCategory(): \ilCalendarCategory {
-		$appointment = $this->getAppointment();
+		$entry_id = $this->getAppointment()->getEntryId();
+		if(! array_key_exists($entry_id, $this->categories)){
+			$cat_id = ilCalendarCategoryAssignments::_lookupCategory($entry_id);
+			$this->categories[$this->getAppointment()->getEntryId()] = ilCalendarCategory::getInstanceByCategoryId($cat_id);
+		}
+		return $this->categories[$entry_id];
+	}
 
-		$cat_id = ilCalendarCategoryAssignments::_lookupCategory($appointment->getEntryId());
-		$cat = ilCalendarCategory::getInstanceByCategoryId($cat_id);
+	/**
+	 * @return bool
+	 */
+	public function checkWriteAccess(){
+		global $DIC;
 
-		return $cat;
+		$system = $DIC->rbac()->system();
+
+		$ref_id = array_pop(ilObject::_getAllReferences($this->getCategory()->getObjId()));
+
+		return $system->checkAccess("write",$ref_id);
+
 	}
 
 
