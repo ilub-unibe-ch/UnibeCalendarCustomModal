@@ -133,6 +133,6 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 	 * @return string
 	 */
 	private function getUploadURL(): string {
-		return (new ilUnibeUploadHandlerGUI())->buildUploadURL($this->getCategory()->getObjId());
+		return (new ilUnibeFileHandlerGUI())->buildUploadURL($this->getCategory()->getObjId());
 	}
 }
