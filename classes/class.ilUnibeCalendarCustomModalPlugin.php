@@ -53,12 +53,15 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 			$r = $DIC->ui()->renderer();
 
 			return $r->render($f->dropzone()
-			                    ->file()
-			                    ->standard($this->getUploadURL())
-			                    ->withUploadButton($f->button()->standard('Upload', '')));
-		}
+					->file()
+					->standard($this->getUploadURL())
+					->withUserDefinedFileNamesEnabled(true)
+					->withAdditionalOnLoadCode(function($id) {
+						return "il.Unibe.customizeWrapper($id)";
+					})
+					->withUploadButton($f->button()->standard('Upload', '')));
 
-		return "";
+		}
 	}
 
 
@@ -68,7 +71,51 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 	 * @return \ilInfoScreenGUI
 	 */
 	public function infoscreenAddContent(ilInfoScreenGUI $a_info) {
+		global $DIC;
+
+
+		$files_property = null;
+		foreach($a_info->section as $section_key => $section){
+			foreach($section['properties'] as $property_key => $property){
+				if($property['name'] == 'Files'){
+					$files_property = $a_info->section[$section_key]['properties'][$property_key];
+					$a_info->section[$section_key]['properties'][$property_key] = null;
+				}
+			}
+		}
+
+		$event_items = (ilObjectActivation::getItemsByEvent($this->getCategory()->getObjId()));
+
+		$file_html = "";
+		$renderer = $DIC->ui()->renderer();
+		$factory = $DIC->ui()->factory();
+
+		if (count($event_items)) {
+			foreach ($event_items as $item) {
+				if ($item['type'] == "file") {
+					$file = new ilObjFile($item['ref_id']);
+					//var_dump($file);
+					$file_name =  $file->getFileName();
+					$href = ilLink::_getStaticLink($file->getRefId(), "file", true,"download");
+					$file_link = $renderer->render($factory->button()->shy($file->getTitle(), $href));
+					$delete_link = "";
+					if($this->checkWriteAccess()){
+						$delete_action = (new ilUnibeFileHandlerGUI())->buildDeleteAction($this->getCategory()->getObjId(),$file->getRefId());
+						$delete_link = "<a onclick=$delete_action style='float: right;'><span class='glyphicon glyphicon-trash' aria-hidden='true'></span></a>";
+					}
+
+					$file_html .= "<div class='il-unibe-file'>$file_link$delete_link</br></div>";
+				}
+			}
+			$a_info->addSection("Ressources");
+
+			$a_info->addProperty("Files",$file_html);
+		}
+
+
+
 		return $a_info;
+
 	}
 
 
