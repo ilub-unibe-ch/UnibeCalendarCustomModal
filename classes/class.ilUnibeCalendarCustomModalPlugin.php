@@ -107,9 +107,9 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 					$file_html .= "<div class='il-unibe-file'>$file_link$delete_link</br></div>";
 				}
 			}
-			$a_info->addSection("Ressources");
+			$a_info->addSection("Ressourcen");
 
-			$a_info->addProperty("Files",$file_html);
+			$a_info->addProperty("Dateien",$file_html);
 		}
 
 
