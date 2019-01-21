@@ -5,7 +5,7 @@ require_once('./Customizing/global/plugins/Services/Calendar/AppointmentCustomMo
 /**
  * Class ilUnibeCalendarCustomModalPlugin
  *
- * @author Fabian Schmid <fs@studer-raimann.ch>
+ * @author Timon Amstutz <timon.amstutz@ilub.unibe.ch>
  */
 class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 	/**

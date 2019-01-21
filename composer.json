@@ -13,8 +13,8 @@
   "require": {},
   "autoload": {
     "psr-4": {
-      "SRAG\\Plugins\\UnibeCalendarCustomGrid\\": "../../AppointmentCustomGrid/UnibeCalendarCustomGrid/src/",
-      "SRAG\\Plugins\\UnibeCalendarCustomModal\\": "src/"
+      "iLub\\Plugin\\UnibeCalendarCustomGrid\\": "../../AppointmentCustomGrid/UnibeCalendarCustomGrid/src/",
+      "iLub\\Plugin\\UnibeCalendarCustomModal\\": "src/"
     },
     "classmap": [
       "classes",
