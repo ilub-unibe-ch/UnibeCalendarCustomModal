@@ -171,7 +171,7 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 
 		$ref_id = array_pop(ilObject::_getAllReferences($this->getCategory()->getObjId()));
 
-		return $system->checkAccess("write",$ref_id);
+		return $system->checkAccess("manage_materials",$ref_id);
 
 	}
 
