@@ -84,10 +84,12 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 
         $files_property = null;
         foreach($a_info->section as $section_key => $section){
-            foreach($section['properties'] as $property_key => $property){
-                if($property['name'] == 'Files'){
-                    $files_property = $a_info->section[$section_key]['properties'][$property_key];
-                    $a_info->section[$section_key]['properties'][$property_key] = null;
+            if(is_array($section['properties'])){
+                foreach($section['properties'] as $property_key => $property){
+                    if($property['name'] == 'Files'){
+                        $files_property = $a_info->section[$section_key]['properties'][$property_key];
+                        $a_info->section[$section_key]['properties'][$property_key] = null;
+                    }
                 }
             }
         }
