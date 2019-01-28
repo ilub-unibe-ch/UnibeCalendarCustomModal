@@ -84,14 +84,17 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 
         $files_property = null;
         foreach($a_info->section as $section_key => $section){
-            if(is_array($section['properties'])){
-                foreach($section['properties'] as $property_key => $property){
-                    if($property['name'] == 'Files'){
-                        $files_property = $a_info->section[$section_key]['properties'][$property_key];
-                        $a_info->section[$section_key]['properties'][$property_key] = null;
-                    }
-                }
-            }
+
+	        if(is_array($section['properties'])){
+		        foreach($section['properties'] as $property_key => $property){
+			        if($property['name'] == 'Dozierende'){
+				        $a_info->section[$section_key]['properties'][$property_key]['value'] = $this->getMetaDataValueByTitle('Dozierende');
+			        }
+			        if($property['name'] == 'Files'){
+				        $a_info->section[$section_key]['properties'][$property_key] = null;
+			        }
+		        }
+	        }
         }
 
         $event_items = (ilObjectActivation::getItemsByEvent($this->getCategory()->getObjId()));
@@ -104,8 +107,6 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
             foreach ($event_items as $item) {
                 if ($item['type'] == "file") {
                     $file = new ilObjFile($item['ref_id']);
-                    //var_dump($file);
-                    $file_name =  $file->getFileName();
                     $href = ilLink::_getStaticLink($file->getRefId(), "file", true,"download");
                     $file_link = $renderer->render($factory->button()->shy($file->getTitle(), $href));
                     $delete_link = "";
@@ -128,6 +129,27 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 
     }
 
+	/**
+	 * @param string $title
+	 * @return string
+	 * @throws ilDatabaseException
+	 */
+	protected function getMetaDataValueByTitle(string $title){
+		global $DIC;
+
+		$obj_id = $this->getCategory()->getObjId();
+		$query = "SELECT val.value
+			FROM adv_md_values_text as val
+			INNER JOIN adv_mdf_definition as def ON  val.field_id = def.field_id
+			WHERE def.title = '$title' AND val.obj_id = $obj_id";
+		$row = $DIC->database()->query($query)->fetchRow();
+
+		if($row['value']){
+			return $row['value'];
+		}
+		return "";
+
+	}
 
     /**
      * @param ilToolbarGUI $a_toolbar
