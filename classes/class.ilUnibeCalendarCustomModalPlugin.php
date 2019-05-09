@@ -93,6 +93,9 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 			        if($property['name'] == 'Files'){
 				        $a_info->section[$section_key]['properties'][$property_key] = null;
 			        }
+			        if($property['name'] == 'Links'){
+				        $a_info->section[$section_key]['properties'][$property_key]['value'] = $this->getMetaDataValueByTitle('Links');
+			        }
 		        }
 	        }
         }
