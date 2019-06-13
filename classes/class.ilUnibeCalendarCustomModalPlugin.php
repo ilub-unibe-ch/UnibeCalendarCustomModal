@@ -106,7 +106,13 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
         $renderer = $DIC->ui()->renderer();
         $factory = $DIC->ui()->factory();
 
-        if (count($event_items)) {
+        $has_files = count($event_items);
+        $podcast = $this->parentCoursePodcast();
+
+        if($has_files|| $podcast){
+	        $a_info->addSection("Ressourcen");
+        }
+        if ($has_files) {
             foreach ($event_items as $item) {
                 if ($item['type'] == "file") {
                     $file = new ilObjFile($item['ref_id']);
@@ -121,15 +127,43 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
                     $file_html .= "<div class='il-unibe-file'>$file_link$delete_link</br></div>";
                 }
             }
-            $a_info->addSection("Ressourcen");
 
             $a_info->addProperty("Dateien",$file_html);
         }
-
+	    if ($podcast) {
+        	$DIC->ctrl()->saveParameter("ilObjOpenCastGUI","ref_id",$podcast);
+		    $podcas_link = $DIC->ctrl()->getLinkTargetByClass(["ilObjPluginDispatchGUI","ilObjOpenCastGUI"],"showContent");
+		    $a_info->addProperty("Podcasts",$DIC->ui()->renderer()->render($DIC->ui()->factory()->link()->standard("Alle Podcasts der Veranstaltung",$podcas_link)));
+	    }
 
 
         return $a_info;
 
+    }
+
+	/**
+	 * @return int
+	 */
+    protected function parentCoursePodcast(){
+	    /**
+	     * @var \ILIAS\DI\Container
+	     */
+	    global $DIC;
+
+	    $obj_id = $this->getCategory()->getObjId();
+	    $ref_id = array_pop(ilObject::_getAllReferences($obj_id));
+
+	    $parent_ref_id = $DIC->repositoryTree()->getParentId($ref_id);
+	    $children = $DIC->repositoryTree()->getChildsByType($parent_ref_id,"xoct");
+
+
+	    foreach ($children as $child){
+	    	if($DIC->rbac()->system()->checkAccess("read",$child["ref_id"])){
+	    		return $child["ref_id"];
+		    }
+	    }
+
+    	return 0;
     }
 
 	/**
