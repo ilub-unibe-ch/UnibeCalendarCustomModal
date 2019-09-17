@@ -152,16 +152,17 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 
 	    $obj_id = $this->getCategory()->getObjId();
 	    $ref_id = array_pop(ilObject::_getAllReferences($obj_id));
+		if(!empty($ref_id)) {
+			$parent_ref_id = $DIC->repositoryTree()->getParentId($ref_id);
+			$children = $DIC->repositoryTree()->getChildsByType($parent_ref_id, "xoct");
 
-	    $parent_ref_id = $DIC->repositoryTree()->getParentId($ref_id);
-	    $children = $DIC->repositoryTree()->getChildsByType($parent_ref_id,"xoct");
 
-
-	    foreach ($children as $child){
-	    	if($DIC->rbac()->system()->checkAccess("read",$child["ref_id"])){
-	    		return $child["ref_id"];
-		    }
-	    }
+			foreach ($children as $child) {
+				if ($DIC->rbac()->system()->checkAccess("read", $child["ref_id"])) {
+					return $child["ref_id"];
+				}
+			}
+		}
 
     	return 0;
     }
