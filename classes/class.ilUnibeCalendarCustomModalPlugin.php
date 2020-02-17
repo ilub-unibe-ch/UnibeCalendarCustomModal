@@ -132,7 +132,7 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
         }
 	    if ($podcast) {
         	$DIC->ctrl()->setParameterByClass("ilObjPluginDispatchGUI","ref_id",$podcast);
-		    $podcas_link = $DIC->ctrl()->getLinkTargetByClass(["ilObjPluginDispatchGUI","ilObjOpenCastGUI","xoctEventGUI"],"showContent");
+		    $podcas_link = $DIC->ctrl()->getLinkTargetByClass(["ilObjPluginDispatchGUI","ilObjOpenCastGUI","xoctEventGUI"]);
 		    $a_info->addProperty("Podcasts",$DIC->ui()->renderer()->render($DIC->ui()->factory()->link()->standard("Alle Podcasts der Veranstaltung",$podcas_link)));
 	    }
 
