@@ -182,7 +182,7 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 
 		$obj_id = $this->getCategory()->getObjId();
 		$query = "SELECT val.value
-			FROM adv_md_values_text as val
+			FROM adv_md_values_ltext as val
 			INNER JOIN adv_mdf_definition as def ON  val.field_id = def.field_id
 			WHERE def.title = '$title' AND val.obj_id = $obj_id";
 		$row = $DIC->database()->query($query)->fetchRow();
