@@ -1,6 +1,8 @@
 <?php
 
-require_once('./Customizing/global/plugins/Services/Calendar/AppointmentCustomModal/UnibeCalendarCustomModal/vendor/autoload.php');
+declare(strict_types=1);
+
+use ILIAS\DI\Container;
 
 /**
  * Class ilUnibeCalendarCustomModalPlugin
@@ -12,100 +14,95 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
     /**
      * ilCalendarCategory []
      */
-    protected $categories = [];
-    
-    /**
-     * @return string
-     */
-    public final function getPluginName() {
+    protected array $categories = [];
+    protected Container $dic;
+
+    public function __construct(ilDBInterface $db, ilComponentRepositoryWrite $component_repository, string $id)
+    {
+        parent::__construct($db, $component_repository, $id);
+        global $DIC;
+        $this->dic = $DIC;
+    }
+
+    public final function getPluginName(): string {
         return "UnibeCalendarCustomModal";
     }
 
-    /**
-     * @return bool
-     */
-    private function isSession() {
+
+    private function isSession() :bool {
         return $this->getCategory()->getObjType() === "sess";
     }
 
-    /**
-     * @return bool
-     */
-    public function checkWriteAccess(){
-        global $DIC;
 
-        $system = $DIC->rbac()->system();
+    public function checkWriteAccess(): bool{
 
-        $ref_id = array_pop(ilObject::_getAllReferences($this->getCategory()->getObjId()));
+
+        $system = $this->dic->rbac()->system();
+        $ref_array = ilObject::_getAllReferences($this->getCategory()->getObjId());
+        $ref_id = array_pop($ref_array);
 
         return $system->checkAccess("manage_materials",$ref_id,"sess");
 
     }
 
-    /**
-     * @return string
-     */
-    public function replaceContent() {
+
+    public function replaceContent(): string{
         return "";
     }
 
 
-    /**
-     * @return string
-     */
-    public function addExtraContent() {
-        global $DIC;
+
+    public function addExtraContent(): string {
 
         if ($this->isSession() && $this->checkWriteAccess()) {
-            $f = $DIC->ui()->factory();
-            $r = $DIC->ui()->renderer();
+            $f = $this->dic->ui()->factory();
+            $r = $this->dic->ui()->renderer();
 
             return $r->render($f->dropzone()
                 ->file()
-                ->standard($this->getUploadURL())
-                ->withUserDefinedFileNamesEnabled(true)
+                ->standard("title", "drop files here", $this->getUploadURL(), $f->input()->field()->file(new ilUIAsyncDemoFileUploadHandlerGUI, "files here"))
                 ->withAdditionalOnLoadCode(function($id) {
                     return "il.Unibe.customizeWrapper($id)";
                 })
                 ->withUploadButton($f->button()->standard('Upload', '')));
 
         }
+        return "";
     }
 
     /**
-     * @param ilInfoScreenGUI $a_info
-     * @return ilInfoScreenGUI|mixed
      * @throws ilDatabaseException
      */
-    public function infoscreenAddContent(ilInfoScreenGUI $a_info) {
-        global $DIC;
+    public function infoscreenAddContent(ilInfoScreenGUI $a_info): ilInfoScreenGUI {
 
-        $renderer = $DIC->ui()->renderer();
-        $factory = $DIC->ui()->factory();
 
-        $files_property = null;
-        foreach($a_info->section as $section_key => $section){
-	        if(is_array($section['properties'])){
-		        foreach($section['properties'] as $property_key => $property){
+        $renderer = $this->dic->ui()->renderer();
+        $factory = $this->dic->ui()->factory();
+
+        $section = $a_info->getSection();
+        foreach($section as $section_key => $a_section){
+	        if(is_array($a_section['properties'])){
+		        foreach($a_section['properties'] as $property_key => $property){
 			        if($property['name'] == 'Dozierende'){
-				        $a_info->section[$section_key]['properties'][$property_key]['value'] = $this->getMetaDataValueByTitle('Dozierende');
+				        $section[$section_key]['properties'][$property_key]['value'] = $this->getMetaDataValueByTitle('Dozierende');
 			        }
-			        if($property['name'] == 'Files'){
-				        $a_info->section[$section_key]['properties'][$property_key] = null;
+			        if($property['name'] == 'Dateien'){
+				        $section[$section_key]['properties'][$property_key]['value'] = null;
 			        }
 			        if($property['name'] == 'Links'){
-				        $a_info->section[$section_key]['properties'][$property_key]['value'] = $this->getMetaDataValueByTitle('Links');
+				        $section[$section_key]['properties'][$property_key]['value'] = $this->getMetaDataValueByTitle('Links');
 			        }
                     if($property['name'] == 'Karte'){
                         $js_component = $factory->legacy("")->withOnLoadCode(function($id){
                             return "il.Unibe.loadMap('$id')";
                         });
-                        $new_content = $a_info->section[$section_key]['properties'][$property_key]['value'].$renderer->renderAsync($js_component);
-                        $a_info->section[$section_key]['properties'][$property_key]['value']  = $new_content;
+                        $new_content = $section[$section_key]['properties'][$property_key]['value'].$renderer->renderAsync($js_component);
+                        $section[$section_key]['properties'][$property_key]['value']  = $new_content;
                     }
 		        }
 	        }
         }
+        $a_info->setSection($section);
 
         $event_items = (ilObjectActivation::getItemsByEvent($this->getCategory()->getObjId()));
 
@@ -121,7 +118,7 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
         if ($has_files) {
             foreach ($event_items as $item) {
                 if ($item['type'] == "file") {
-                    $file = new ilObjFile($item['ref_id']);
+                    $file = new ilObjFile((int)$item['ref_id']);
                     $href = ilLink::_getStaticLink($file->getRefId(), "file", true,"download");
                     $file_link = $renderer->render($factory->button()->shy($file->getTitle(), $href));
                     $delete_link = "";
@@ -137,33 +134,27 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
             $a_info->addProperty("Dateien",$file_html);
         }
 	    if ($podcast) {
-        	$DIC->ctrl()->setParameterByClass("ilObjPluginDispatchGUI","ref_id",$podcast);
-		    $podcas_link = $DIC->ctrl()->getLinkTargetByClass(["ilObjPluginDispatchGUI","ilObjOpenCastGUI","xoctEventGUI"]);
-		    $a_info->addProperty("Podcasts",$DIC->ui()->renderer()->render($DIC->ui()->factory()->link()->standard("Alle Podcasts der Veranstaltung",$podcas_link)));
+            $this->dic->ctrl()->setParameterByClass("ilObjPluginDispatchGUI","ref_id",$podcast);
+		    $podcas_link = $this->dic->ctrl()->getLinkTargetByClass(["ilObjPluginDispatchGUI","ilObjOpenCastGUI","xoctEventGUI"]);
+		    $a_info->addProperty("Podcasts",$this->dic->ui()->renderer()->render($this->dic->ui()->factory()->link()->standard("Alle Podcasts der Veranstaltung",$podcas_link)));
 	    }
 
         return $a_info;
 
     }
 
-	/**
-	 * @return int
-	 */
-    protected function parentCoursePodcast(){
-	    /**
-	     * @var \ILIAS\DI\Container
-	     */
-	    global $DIC;
+    protected function parentCoursePodcast(): int{
 
-	    $obj_id = $this->getCategory()->getObjId();
-	    $ref_id = array_pop(ilObject::_getAllReferences($obj_id));
+
+        $ref_array = ilObject::_getAllReferences($this->getCategory()->getObjId());
+        $ref_id = array_pop($ref_array);
 		if(!empty($ref_id)) {
-			$parent_ref_id = $DIC->repositoryTree()->getParentId($ref_id);
-			$children = $DIC->repositoryTree()->getChildsByType($parent_ref_id, "xoct");
+			$parent_ref_id = $this->dic->repositoryTree()->getParentId($ref_id);
+			$children = $this->dic->repositoryTree()->getChildsByType($parent_ref_id, "xoct");
 
 
 			foreach ($children as $child) {
-				if ($DIC->rbac()->system()->checkAccess("read", $child["ref_id"])) {
+				if ($this->dic->rbac()->system()->checkAccess("read", $child["ref_id"])) {
 					return $child["ref_id"];
 				}
 			}
@@ -177,15 +168,14 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 	 * @return string
 	 * @throws ilDatabaseException
 	 */
-	protected function getMetaDataValueByTitle(string $title){
-		global $DIC;
+	protected function getMetaDataValueByTitle(string $title): string{
 
 		$obj_id = $this->getCategory()->getObjId();
 		$query = "SELECT val.value
 			FROM adv_md_values_ltext as val
 			INNER JOIN adv_mdf_definition as def ON  val.field_id = def.field_id
 			WHERE def.title = '$title' AND val.obj_id = $obj_id";
-		$row = $DIC->database()->query($query)->fetchRow();
+		$row = $this->dic->database()->query($query)->fetchRow();
 
 		if($row['value']){
 
@@ -201,37 +191,31 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
      *
      * @return ilToolbarGUI
      */
-    public function toolbarAddItems(ilToolbarGUI $a_toolbar) {
+    public function toolbarAddItems(ilToolbarGUI $a_toolbar): ilToolbarGUI {
 
 
         return $a_toolbar;
     }
 
 
-    /**
-     * @return ilToolbarGUI or empty
-     */
-    public function toolbarReplaceContent() {
+
+    public function toolbarReplaceContent(): ?ilToolbarGUI{
         return null;
     }
 
 
     /**
-     * @param string $title
-     *
-     * @return string
+     * @param string $current_title
+     *     not yet properly typed in parent class
      */
-    public function editModalTitle($title) {
-        return $title;
+    public function editModalTitle($current_title): string {
+        return $current_title;
     }
 
 
-    /**
-     * @return \ilCalendarCategory
-     */
-    private function getCategory(): \ilCalendarCategory {
+    private function getCategory(): ilCalendarCategory {
         $entry_id = $this->getAppointment()->getEntryId();
-        if(! array_key_exists($entry_id, $this->categories)){
+        if(!array_key_exists($entry_id, $this->categories)){
             $cat_id = ilCalendarCategoryAssignments::_lookupCategory($entry_id);
             $this->categories[$this->getAppointment()->getEntryId()] = ilCalendarCategory::getInstanceByCategoryId($cat_id);
         }
