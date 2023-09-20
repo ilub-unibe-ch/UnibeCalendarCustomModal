@@ -39,7 +39,7 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 
         $system = $this->dic->rbac()->system();
         $ref_array = ilObject::_getAllReferences($this->getCategory()->getObjId());
-        $ref_id = array_pop($ref_array);
+        $ref_id = (int)array_pop($ref_array);
 
         return $system->checkAccess("manage_materials",$ref_id,"sess");
 
@@ -60,14 +60,16 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin {
 
             return $r->render($f->dropzone()
                 ->file()
-                ->standard("title", "drop files here", $this->getUploadURL(), $f->input()->field()->file(new ilUIAsyncDemoFileUploadHandlerGUI, "files here"))
+                ->standard("title2", "", $this->getUploadURL(), $f->input()->field()->file(new ilUnibeFileHandlerGUI(), "Upload", "Drop files here"))
                 ->withAdditionalOnLoadCode(function($id) {
                     return "il.Unibe.customizeWrapper($id)";
                 })
-                ->withUploadButton($f->button()->standard('Upload', '')));
+                ->withUploadButton($f->button()->standard('Upload', '#')));
 
         }
+
         return "";
+
     }
 
     /**
