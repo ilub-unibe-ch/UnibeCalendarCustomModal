@@ -90,7 +90,7 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin
 
         $section = $a_info->getSection();
         foreach($section as $section_key => $a_section) {
-            if(is_array($a_section['properties'])) {
+            if(array_key_exists('properties', $a_section) && is_array($a_section['properties'])) {
                 foreach($a_section['properties'] as $property_key => $property) {
                     if($property['name'] == 'Dozierende') {
                         $section[$section_key]['properties'][$property_key]['value'] = $this->getMetaDataValueByTitle('Dozierende');
@@ -102,11 +102,19 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin
                         $section[$section_key]['properties'][$property_key]['value'] = $this->getMetaDataValueByTitle('Links');
                     }
                     if($property['name'] == 'Karte') {
-                        $js_component = $factory->legacy("")->withOnLoadCode(function ($id) {
-                            return "il.Unibe.loadMap('$id')";
-                        });
-                        $new_content = $section[$section_key]['properties'][$property_key]['value'].$renderer->renderAsync($js_component);
-                        $section[$section_key]['properties'][$property_key]['value']  = $new_content;
+                        $location_data = $this->getMetaDataLocation();
+                        $map_gui = \ilMapUtil::getMapGUI();
+                        $map_id = "map_" . uniqid();
+                        $map_gui->setMapId($map_id)
+                                ->setLatitude($location_data['loc_lat'])
+                                ->setLongitude($location_data['loc_long'])
+                                ->setZoom((int)$location_data['loc_zoom'])
+                                ->setEnableTypeControl(true)
+                                ->setEnableLargeMapControl(true)
+                                ->setEnableUpdateListener(false)
+                                ->setEnableCentralMarker(true)
+                                ->setWidth("100%");
+                        $section[$section_key]['properties'][$property_key]['value']  = $map_gui->getHtml(true);
                     }
                 }
             }
@@ -173,11 +181,6 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin
         return null;
     }
 
-    /**
-     * @param string $title
-     * @return string
-     * @throws ilDatabaseException
-     */
     protected function getMetaDataValueByTitle(string $title): string
     {
 
@@ -192,9 +195,16 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin
             return str_replace("< /a>", "</a>", str_replace("< a href", "<a href", $row['value']));
         }
         return "";
-
     }
 
+    protected function getMetaDataLocation(): array
+    {
+        $obj_id = $this->getCategory()->getObjId();
+        $query = "SELECT *
+			FROM adv_md_values_location as val
+			WHERE val.obj_id = $obj_id";
+        return $this->dic->database()->query($query)->fetchRow();
+    }
     /**
      * @param ilToolbarGUI $a_toolbar
      *
