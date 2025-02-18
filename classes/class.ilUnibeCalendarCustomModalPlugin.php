@@ -81,7 +81,6 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin
 
     /**
      * @throws ilCtrlException
-     * @throws ilCtrlException
      */
     public function infoscreenAddContent(ilInfoScreenGUI $a_info): ilInfoScreenGUI
     {
