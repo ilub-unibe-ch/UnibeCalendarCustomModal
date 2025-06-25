@@ -107,8 +107,8 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin
                         $map_gui = ilMapUtil::getMapGUI();
                         $map_id = 'map_' . uniqid();
                         $map_gui->setMapId($map_id)
-                                ->setLatitude($location_data['loc_lat'])
-                                ->setLongitude($location_data['loc_long'])
+                                ->setLatitude((string)$location_data['loc_lat'])
+                                ->setLongitude((string)$location_data['loc_long'])
                                 ->setZoom((int)$location_data['loc_zoom'])
                                 ->setEnableTypeControl(true)
                                 ->setEnableLargeMapControl(true)
