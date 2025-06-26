@@ -180,7 +180,7 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin
 
             foreach ($children as $child) {
                 if ($this->dic->rbac()->system()->checkAccess('read', (int) $child['ref_id'])) {
-                    return $child['ref_id'];
+                    return (string)$child['ref_id'];
                 }
             }
         }
