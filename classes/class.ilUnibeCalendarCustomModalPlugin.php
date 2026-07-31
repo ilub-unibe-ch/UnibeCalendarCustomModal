@@ -103,19 +103,7 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin
                         $section[$section_key]['properties'][$property_key]['value'] = $this->getMetaDataValueByTitle('Links');
                     }
                     if($property['name'] == 'Karte') {
-                        $location_data = $this->getMetaDataLocation();
-                        $map_gui = ilMapUtil::getMapGUI();
-                        $map_id = 'map_' . uniqid();
-                        $map_gui->setMapId($map_id)
-                                ->setLatitude((string)$location_data['loc_lat'])
-                                ->setLongitude((string)$location_data['loc_long'])
-                                ->setZoom((int)$location_data['loc_zoom'])
-                                ->setEnableTypeControl(true)
-                                ->setEnableLargeMapControl(true)
-                                ->setEnableUpdateListener(false)
-                                ->setEnableCentralMarker(true)
-                                ->setWidth('100%');
-                        $section[$section_key]['properties'][$property_key]['value']  = $map_gui->getHtml(true);
+                        $section[$section_key]['properties'][$property_key]['value'] = $this->renderModalMap();
                     }
                 }
             }
@@ -165,6 +153,105 @@ class ilUnibeCalendarCustomModalPlugin extends ilAppointmentCustomModalPlugin
 
         return $a_info;
 
+    }
+
+    private function renderModalMap(): string
+    {
+        $location_data = $this->getMetaDataLocation();
+
+        if (!isset($location_data['loc_lat'], $location_data['loc_long'], $location_data['loc_zoom'])) {
+            return '';
+        }
+
+        $map_id = 'map_' . uniqid();
+        $latitude = (float)$location_data['loc_lat'];
+        $longitude = (float)$location_data['loc_long'];
+        $zoom = (int)$location_data['loc_zoom'];
+
+        $map_gui = ilMapUtil::getMapGUI();
+        $map_gui->setMapId($map_id)
+            ->setLatitude((string)$latitude)
+            ->setLongitude((string)$longitude)
+            ->setZoom($zoom)
+            ->setEnableTypeControl(true)
+            ->setEnableLargeMapControl(true)
+            ->setEnableUpdateListener(false)
+            ->setEnableCentralMarker(true)
+            ->setWidth('100%');
+
+        $tile_servers = ilMapUtil::getStdTileServers();
+        if (is_string($tile_servers)) {
+            $tile_servers = preg_split('/\s+/', trim($tile_servers)) ?: [];
+        }
+        if (!is_array($tile_servers)) {
+            $tile_servers = [];
+        }
+
+        $this->dic->language()->loadLanguageModule('maps');
+
+        $configuration = [
+            'mapId' => $map_id,
+            'mapData' => [
+                $map_id => [
+                    $latitude,
+                    $longitude,
+                    $zoom,
+                    true,
+                    true,
+                    false,
+                    array_values($tile_servers),
+                    ilMapUtil::getStdGeolocationServer() ?? '',
+                ],
+            ],
+            'userMarkers' => [$map_id => []],
+            'invalidAddress' => $this->dic->language()->txt('invalid_address'),
+        ];
+
+        $initializer_url = rtrim($this->getRelativeDirectory(), '/')
+            . '/js/modal-openlayers-map.js?v='
+            . rawurlencode($this->getVersion());
+
+        $configuration_json = json_encode(
+            $configuration,
+            JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+        );
+        $initializer_url_json = json_encode(
+            $initializer_url,
+            JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES
+        );
+
+        $component = $this->dic->ui()->factory()->legacy($map_gui->getHtml(true))->withOnLoadCode(
+            static function (string $id) use ($configuration_json, $initializer_url_json): string {
+                return <<<JS
+(() => {
+    const configuration = {$configuration_json};
+    const start = () => window.UnibeCalendarModalMap.init(configuration);
+
+    if (window.UnibeCalendarModalMap) {
+        start();
+        return;
+    }
+
+    let script = document.querySelector('script[data-unibe-calendar-modal-map]');
+    if (script) {
+        script.addEventListener('load', start, {once: true});
+        return;
+    }
+
+    script = document.createElement('script');
+    script.src = {$initializer_url_json};
+    script.dataset.unibeCalendarModalMap = 'true';
+    script.addEventListener('load', start, {once: true});
+    script.addEventListener('error', () => {
+        console.error('Modal map script could not be loaded.');
+    }, {once: true});
+    document.head.appendChild(script);
+})();
+JS;
+            }
+        );
+
+        return $this->dic->ui()->renderer()->render($component);
     }
 
     protected function parentCoursePodcast(): ?string
